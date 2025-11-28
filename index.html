@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Prototype MPVM – Mot de Passe Visuel Multidimensionnel</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    #output {
+      margin-top: 20px;
+      font-size: 32px;
+      font-family: monospace;
+      border: 1px solid #ccc;
+      padding: 10px;
+      min-height: 60px;
+    }
+    .char {
+      display: inline-block;
+      transition: transform 0.15s linear;
+    }
+  </style>
+</head>
+<body>
+  <h1>Prototype MPVM</h1>
+
+  <label>
+    Mot de passe de base :
+    <input type="text" id="basePassword" value="AFG3h45612FGFYT" style="width: 100%;">
+  </label>
+
+  <label>
+    Rafraîchissement toutes les (minutes) :
+    <input type="number" id="refreshMinutes" value="5" min="1" style="width: 60px;">
+  </label>
+
+  <button id="apply">Générer le mot de passe visuel</button>
+
+  <div id="output"></div>
+
+  <p>
+    <strong>Note :</strong> ceci est un prototype visuel uniquement. La sécurité réelle
+    demande une intégration côté serveur qui accepte les espaces et gère la logique MPVM.
+  </p>
+
+  <script>
+    const baseInput = document.getElementById('basePassword');
+    const refreshInput = document.getElementById('refreshMinutes');
+    const applyBtn = document.getElementById('apply');
+    const output = document.getElementById('output');
+
+    let refreshIntervalId = null;
+
+    function randomFromArray(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    // Mélange l'ordre des caractères (shuffle)
+    function shuffleString(str) {
+      const arr = str.split("");
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr.join("");
+    }
+
+    // Ajoute des espaces aléatoires dans la chaîne
+    function addRandomSpaces(base) {
+      let result = "";
+      for (let i = 0; i < base.length; i++) {
+        result += base[i];
+        const nbSpaces = Math.floor(Math.random() * 3); // 0, 1 ou 2 espaces
+        result += " ".repeat(nbSpaces);
+      }
+      return result;
+    }
+
+    function generateVisual() {
+      let base = baseInput.value.trim();
+      if (!base) {
+        output.textContent = "Veuillez entrer un mot de passe de base.";
+        return;
+      }
+
+      // NOUVEAU : mélange des caractères
+      base = shuffleString(base);
+
+      // Chaîne avec espaces aléatoires
+      const spaced = addRandomSpaces(base);
+
+      output.innerHTML = "";
+
+      const colors = [
+        "#e53935", "#1e88e5", "#43a047",
+        "#fb8c00", "#8e24aa", "#00897b",
+        "#5d4037"
+      ];
+
+      const chars = spaced.split("");
+
+      chars.forEach((ch) => {
+        const span = document.createElement("span");
+        span.className = "char";
+        span.textContent = ch;
+
+        // Si c'est un espace, on lui donne juste une petite largeur
+        if (ch === " ") {
+          span.style.width = (Math.random() * 10 + 5) + "px";
+          output.appendChild(span);
+          return;
+        }
+
+        // Couleur aléatoire
+        span.style.color = randomFromArray(colors);
+
+        // Marge à droite pour espacement visuel
+        span.style.marginRight = (Math.random() * 20) + "px";
+
+        // Petite rotation pour l'inclinaison
+        const angle = (Math.random() * 10 - 5); // -5° à +5°
+        span.dataset.baseAngle = angle.toString();
+
+        // Déformation "ovale" simplifiée
+        const scaleX = 0.9 + Math.random() * 0.3; // 0.9 à 1.2
+        const scaleY = 0.9 + Math.random() * 0.3; // 0.9 à 1.2
+        span.dataset.scaleX = scaleX.toString();
+        span.dataset.scaleY = scaleY.toString();
+
+        span.style.transform = `rotate(${angle}deg) scale(${scaleX}, ${scaleY})`;
+
+        output.appendChild(span);
+      });
+    }
+
+    function startRefresh() {
+      if (refreshIntervalId) {
+        clearInterval(refreshIntervalId);
+      }
+      const minutes = parseFloat(refreshInput.value) || 5;
+      const periodMs = minutes * 60 * 1000;
+      refreshIntervalId = setInterval(generateVisual, periodMs);
+    }
+
+    // Microvibrations invisibles : léger mouvement vertical
+    setInterval(() => {
+      const spans = document.querySelectorAll(".char");
+      spans.forEach(span => {
+        const angle = parseFloat(span.dataset.baseAngle || "0");
+        const scaleX = parseFloat(span.dataset.scaleX || "1");
+        const scaleY = parseFloat(span.dataset.scaleY || "1");
+        const jitter = (Math.random() * 2 - 1); // -1px à +1px
+        span.style.transform =
+          `rotate(${angle}deg) scale(${scaleX}, ${scaleY}) translateY(${jitter}px)`;
+      });
+    }, 200); // toutes les 200 ms
+
+    applyBtn.addEventListener("click", () => {
+      generateVisual();
+      startRefresh();
+    });
+
+    // Première génération à l'ouverture
+    generateVisual();
+    startRefresh();
+  </script>
+</body>
+</html>
